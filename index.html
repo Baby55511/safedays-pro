@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeDays Pro - วิเคราะห์ระยะปลอดภัย</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff4d94">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="background: #fff3cd; color: #856404; font-size: 0.7rem; text-align: center; padding: 5px; font-weight: bold;">
+        ⚠️ แอปนี้อยู่ในระหว่างพัฒนา (Beta Version) ข้อมูลอาจมีการเปลี่ยนแปลง
+    </div>
+
+    <div class="app-container">
+        <div class="lang-selector">
+            <select id="langSelect" onchange="changeLanguage()">
+                <option value="th">ไทย (Thai)</option>
+                <option value="en">English</option>
+                </select>
+        </div>
+
+        <h2 id="ui-title">📅 SafeDays Pro <span class="beta-tag">BETA</span></h2>
+        
+        <div class="input-group">
+            <label id="ui-label-date">วันแรกที่ประจำเดือนมา (ล่าสุด):</label>
+            <input type="date" id="mensesDate">
+            <label id="ui-label-cycle">รอบเดือนปกติ (กี่วัน):</label>
+            <input type="number" id="cycleDays" value="28">
+            <button id="ui-btn" onclick="calculateAll()">วิเคราะห์ความเสี่ยง</button>
+        </div>
+
+        <div id="resultArea" class="result-box" style="display:none;">
+            <div class="ovulation-info">
+                <span id="ui-ovulation-label">🥚 วันที่คาดว่าไข่จะตก:</span> 
+                <span id="ovulationDateText" style="color: #ff4d4d; font-weight: bold;"></span>
+                <br>
+                <span id="ui-next-menses-label">🩸 วันที่คาดว่าประจำเดือนจะมา:</span> 
+                <span id="nextMensesDateText" style="color: #ff4d94; font-weight: bold;"></span>
+                
+                <div style="margin-top: 15px; display: flex; gap: 8px; justify-content: center;">
+                    <button onclick="exportToGoogle()" style="width: auto; padding: 8px 12px; background: #4285F4; font-size: 0.75rem; margin: 0;">Google Cal</button>
+                    <button onclick="exportToApple()" style="width: auto; padding: 8px 12px; background: #000; font-size: 0.75rem; margin: 0;">iOS Cal</button>
+                </div>
+            </div>
+
+            <div id="calendarContainer"></div>
+            
+            <div class="legend-container">
+                <div class="legend-item"><span class=\"dot-small color-red\"></span> <small id="ui-risk-h">เสี่ยงสูง</small></div>
+                <div class="legend-item"><span class=\"dot-small color-yellow\"></span> <small id="ui-risk-m">เสี่ยงปานกลาง</small></div>
+                <div class="legend-item"><span class=\"dot-small color-green\"></span> <small id="ui-risk-l">เสี่ยงต่ำ</small></div>
+            </div>
+
+            <div class="important-note">
+                <p id="ui-note">⚠️ <strong>หมายเหตุ:</strong> หากประจำเดือนยังไม่หมดภายใน 7 วัน ควรหลีกเลี่ยงการมีเพศสัมพันธ์โดยไม่ป้องกัน</p>
+                <hr>
+                <p id="ui-disclaimer" style="font-size: 0.7rem; color: #777;">
+                    🛡️ <strong>ข้อความปฏิเสธความรับผิดชอบ:</strong> ข้อมูลนี้เป็นเพียงการคำนวณตามสถิติเบื้องต้นเท่านั้น ผู้พัฒนาจะไม่รับผิดชอบต่อผลลัพธ์หรือความผิดพลาดใดๆ ที่เกิดขึ้นจากการนำข้อมูลไปใช้ โปรดใช้วิจารณญาณและควรปรึกษาแพทย์ผู้เชี่ยวชาญหากต้องการความแม่นยำทางสุขภาพ
+                </p>
+            </div>
+            
+            <p class="final-warning" id="ui-warning">
+                *การคำนวณดังกล่าวนี้ ใช้เฉพาะกรณีประจำเดือนมาตามรอบปกติเป็นประจำทุกเดือนเท่านั้น
+            </p>
+        </div>
+
+        <div class="donation-box">
+            <h4 id="ui-donate-title">☕ สนับสนุนนักพัฒนา</h4>
+            <p id="ui-donate-msg">Scan QR เพื่อสนับสนุนค่าน้ำใจ</p>
+            <img src="my-qr.jpg" alt="Donation QR Code" onerror="this.style.display='none';">
+            <p style="font-size: 0.8rem; color: #888;" id="ui-donate-sub">(ชื่อจริงอาจแสดงในระบบธนาคาร)</p>
+            <button id="ui-clear-btn" onclick="clearAllData()" style="background:#666; font-size: 0.75rem; padding: 8px; margin-top: 20px; width: auto;">ล้างข้อมูลทั้งหมด (Clear Data)</button>
+        </div>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;">
+        
+        <div class="comment-section">
+            <h4 id="ui-comment-title">💬 พูดคุย/สอบถาม</h4>
+            <div class="main-comment-form">
+                <input type="text" id="mainName" placeholder="ชื่อของคุณ">
+                <textarea id="mainText" placeholder="เขียนข้อความ..."></textarea>
+                <button onclick="addMainComment()" id="ui-send-btn">ส่งข้อความ</button>
+            </div>
+            <div id="commentList" class="comment-list"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // เริ่มการทำงานระบบแอป (Service Worker)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+</body>
+</html>
